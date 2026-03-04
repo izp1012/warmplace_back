@@ -88,18 +88,28 @@ public class ChatService {
             chatRoomUserRepository.save(ChatRoomUser.builder()
                     .roomId(roomId)
                     .userId(userId1)
-                    .userName(userName1)
+                    .userName(userName1 != null ? userName1 : userId1)
                     .build());
             chatRoomUserRepository.save(ChatRoomUser.builder()
                     .roomId(roomId)
                     .userId(userId2)
-                    .userName(userName2)
+                    .userName(userName2 != null ? userName2 : userId2)
                     .build());
         }
         
-        chatRoom.setLastMessage(lastMessage);
-        chatRoom.setLastMessageTime(LocalDateTime.now());
-        chatRoomRepository.save(chatRoom);
+        if (lastMessage != null && !lastMessage.isBlank()) {
+            chatRoom.setLastMessage(lastMessage);
+            chatRoom.setLastMessageTime(LocalDateTime.now());
+            chatRoomRepository.save(chatRoom);
+        }
+    }
+
+    /**
+     * 1:1 대화방이 없으면 생성. 대화상대만 추가(열기)했을 때 호출해 DB에 room/user 반영.
+     */
+    @Transactional
+    public void ensureDirectRoom(String userId1, String userId2, String userName1, String userName2) {
+        updateOrCreateChatRoom(userId1, userId2, userName1, userName2, null);
     }
 
     private String generateDirectRoomId(String userId1, String userId2) {
@@ -131,8 +141,39 @@ public class ChatService {
                 .build();
 
         chatProducer.sendToGroup(roomId, message);
-        updateGroupChatRoom(roomId, content);
+        updateOrCreateGroupChatRoom(roomId, senderId, senderName != null ? senderName : senderId, content);
         log.info("Group message sent to room {} from {}", roomId, senderId);
+    }
+
+    @Transactional
+    public void updateOrCreateGroupChatRoom(String roomId, String senderId, String senderName, String lastMessage) {
+        ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId).orElse(null);
+        if (chatRoom == null) {
+            chatRoom = ChatRoom.builder()
+                    .roomId(roomId)
+                    .name(roomId)
+                    .type(ChatRoom.RoomType.GROUP)
+                    .build();
+            chatRoom = chatRoomRepository.save(chatRoom);
+            if (!chatRoomUserRepository.existsByRoomIdAndUserId(roomId, senderId)) {
+                chatRoomUserRepository.save(ChatRoomUser.builder()
+                        .roomId(roomId)
+                        .userId(senderId)
+                        .userName(senderName != null ? senderName : senderId)
+                        .build());
+            }
+        } else if (!chatRoomUserRepository.existsByRoomIdAndUserId(roomId, senderId)) {
+            chatRoomUserRepository.save(ChatRoomUser.builder()
+                    .roomId(roomId)
+                    .userId(senderId)
+                    .userName(senderName != null ? senderName : senderId)
+                    .build());
+        }
+        if (lastMessage != null && !lastMessage.isBlank()) {
+            chatRoom.setLastMessage(lastMessage);
+            chatRoom.setLastMessageTime(LocalDateTime.now());
+            chatRoomRepository.save(chatRoom);
+        }
     }
 
     @Transactional
@@ -149,13 +190,26 @@ public class ChatService {
         chatMessageMongoRepository.save(document);
     }
 
+    /**
+     * 그룹 방이 없으면 생성하고, 사용자가 chat_room_users에 없으면 추가.
+     */
     @Transactional
-    public void updateGroupChatRoom(String roomId, String lastMessage) {
+    public void ensureGroupRoom(String roomId, String userId, String userName) {
         ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId).orElse(null);
-        if (chatRoom != null) {
-            chatRoom.setLastMessage(lastMessage);
-            chatRoom.setLastMessageTime(LocalDateTime.now());
-            chatRoomRepository.save(chatRoom);
+        if (chatRoom == null) {
+            chatRoom = ChatRoom.builder()
+                    .roomId(roomId)
+                    .name(roomId)
+                    .type(ChatRoom.RoomType.GROUP)
+                    .build();
+            chatRoom = chatRoomRepository.save(chatRoom);
+        }
+        if (!chatRoomUserRepository.existsByRoomIdAndUserId(roomId, userId)) {
+            chatRoomUserRepository.save(ChatRoomUser.builder()
+                    .roomId(roomId)
+                    .userId(userId)
+                    .userName(userName != null ? userName : userId)
+                    .build());
         }
     }
 
@@ -200,6 +254,7 @@ public class ChatService {
         if (roomId == null || roomId.isBlank()) {
             throw new IllegalArgumentException("그룹 채팅방 ID는 필수입니다");
         }
+        ensureGroupRoom(roomId, senderId, senderName != null ? senderName : senderId);
 
         ChatMessage message = ChatMessage.builder()
                 .senderId(senderId)
@@ -232,6 +287,7 @@ public class ChatService {
     }
 
     public List<ChatMessage> getDirectMessages(String userId1, String userId2) {
+        ensureDirectRoom(userId1, userId2, userId1, userId2);
         String roomId = generateDirectRoomId(userId1, userId2);
         List<ChatMessageDocument> documents = chatMessageMongoRepository.findByRoomIdOrderByTimestampAsc(roomId);
         return documents.stream()
