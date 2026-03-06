@@ -8,8 +8,13 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+      user: ${SPRING_DATA_REDIS_USER:defalut}
+      password: ${SPRING_DATA_REDIS_PASSWORD:defalut}
       timeout: 60000
+      ssl:
+        enabled: true
     mongodb:
+      url : ${SPRING_DATA_MONGODB_URL:localhost}
       host: ${SPRING_DATA_MONGODB_HOST:localhost}
       port: ${SPRING_DATA_MONGODB_PORT:27017}
       database: ${SPRING_DATA_MONGODB_DATABASE:warmplace_chat}

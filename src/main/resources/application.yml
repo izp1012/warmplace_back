@@ -1,7 +1,11 @@
 server:
   port: 8081
 
-spring:
+app:
+  cors:
+    allowed-origin-patterns:
+      - http://localhost:*
+      - https://*.vercel.app
   application:
     name: warmplace
   datasource:
@@ -28,7 +32,7 @@ spring:
       group-id: warmplace-consumer-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
         spring.json.value.default.type: com.warmplace.model.ChatMessage
