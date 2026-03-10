@@ -1,13 +1,17 @@
 server:
   port: 8081
-
 app:
   cors:
     allowed-origin-patterns:
       - http://localhost:*
+      - http://localhost:5173
       - https://*.vercel.app
   application:
     name: warmplace
+
+spring:
+  profiles:
+    active: dev
   datasource:
     url: jdbc:postgresql://localhost:5432/warmplace
     username: postgres
@@ -58,3 +62,4 @@ springdoc:
 logging:
   level:
     com.warmplace: DEBUG
+
