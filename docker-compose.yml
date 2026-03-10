@@ -1,12 +1,30 @@
 version: '3.8'
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: warmplace-backend
+    depends_on:
+      - kafka
+      - postgres
+      - redis
+      - mongodb
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    networks:
+      - warmplace-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: warmplace-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      JVMFLAGS: "-Xmx128m -Xms128m"
     ports:
       - "2181:2181"
     networks:
@@ -28,6 +46,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
     networks:
       - warmplace-network
 
