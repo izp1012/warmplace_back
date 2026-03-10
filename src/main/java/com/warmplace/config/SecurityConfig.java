@@ -49,7 +49,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
+                        // Require authentication for WebSocket handshake (STOMP) endpoints
+                        .requestMatchers("/ws/**").authenticated()
                         // 공개 조회용 API들은 토큰 없이 허용
                         .requestMatchers(HttpMethod.GET, "/api/galleries/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
