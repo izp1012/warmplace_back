@@ -1,0 +1,40 @@
+# Exported from Render on 2026-03-10T07:01:19Z
+version: "1"
+projects:
+  - name: My project
+    environments:
+      - name: warmplace_back
+        services:
+          - type: web
+            name: warmplace-backend:latest
+            runtime: image
+            image:
+              url: docker.io/izp1012/warmplace-backend:latest
+            plan: free
+            envVars:
+              - key: SPRING_DATA_MONGODB_DATABASE
+                sync: false
+              - key: SPRING_DATA_MONGODB_URL
+                sync: false
+              - key: SPRING_DATA_REDIS_PASSWORD
+                sync: false
+              - key: SPRING_DATA_REDIS_USER
+                sync: false
+              - key: SPRING_KAFKA_BOOTSTRAP_SERVERS
+                sync: false
+              - key: SPRING_DATA_MONGODB_PORT
+                sync: false
+              - key: SPRING_DATA_MONGODB_HOST
+                sync: false
+              - key: SPRING_DATA_REDIS_PORT
+                sync: false
+              - key: SPRING_DATA_REDIS_HOST
+                sync: false
+              - key: SPRING_DATASOURCE_URL
+                sync: false
+              - key: SPRING_DATASOURCE_PASSWORD
+                sync: false
+              - key: SPRING_DATASOURCE_USERNAME
+                sync: false
+            region: oregon
+            autoDeployTrigger: commit
